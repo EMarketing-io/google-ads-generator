@@ -31,7 +31,6 @@ CONTENT:
 
         time.sleep(0.5)
 
-    # Final summary
     final_start = time.time()
     print(f"\n🧠 Combining {len(chunk_summaries)} summaries...")
     final_prompt = f"""

@@ -20,6 +20,7 @@ def main():
     load_dotenv()
     api_key = os.getenv("OPENAI_API_KEY")
     training_url = os.getenv("TRAINING_PDF_URL")
+
     if not api_key or not training_url:
         raise ValueError("❌ Missing OPENAI_API_KEY or TRAINING_PDF_URL in .env")
 

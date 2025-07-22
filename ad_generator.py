@@ -61,8 +61,6 @@ def generate_ads(llm, keyword_groups, rules, company, offers):
                 keywords=", ".join(keywords),
             )
             ad = json.loads(response.strip("```json\n").strip("```").strip())
-
-            # Deduplicate headlines/descriptions
             unique_headlines = list(dict.fromkeys(ad["headlines"]))[:10]
             unique_descriptions = list(dict.fromkeys(ad["descriptions"]))[:4]
 

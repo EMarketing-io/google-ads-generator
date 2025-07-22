@@ -2,5 +2,6 @@ langchain
 openai
 python-dotenv
 pandas
-docx2txt
+python-docx
 PyMuPDF
+requests
