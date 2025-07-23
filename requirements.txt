@@ -1,7 +1,8 @@
 langchain
-openai
+openai==0.28
 python-dotenv
 pandas
 python-docx
 PyMuPDF
 requests
+bcrypt
