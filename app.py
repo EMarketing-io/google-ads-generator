@@ -3,7 +3,6 @@ import time
 import pandas as pd
 import bcrypt
 import streamlit as st
-from dotenv import load_dotenv
 from io import BytesIO
 
 from langchain.chat_models import ChatOpenAI
@@ -20,9 +19,8 @@ from ad_generator import generate_ads
 st.set_page_config(page_title="Google Ads Generator", layout="wide", page_icon="📢")
 
 # === Load environment ===
-load_dotenv()
-api_key = os.getenv("OPENAI_API_KEY")
-training_url = os.getenv("TRAINING_PDF_URL")
+api_key = st.secrets["OPENAI_API_KEY"]  # Get API key from Streamlit Secrets
+training_url = st.secrets["TRAINING_PDF_URL"]  # Get Training PDF URL from Streamlit Secrets
 
 
 # === Login Section ===
