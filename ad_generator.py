@@ -18,6 +18,8 @@ Generate a high-converting Responsive Search Ad using the provided TRAINING RULE
 - Focus on outcomes (“Save time” vs. “Fast delivery”) and value (“Free Trial” vs. “We offer services”).
 - Match tone and voice based on the COMPANY INFO provided (e.g., formal, playful, premium, budget-friendly).
 - Do not repeat words or phrases across ad elements unless absolutely necessary.
+- ❌ Do not mention or imply competitors (e.g., avoid phrases like “better than”, “upgrade from”, or comparisons like “X vs Y”).
+- ✅ Focus only on the strengths and benefits of the advertised product or brand.
 
 ---
 
