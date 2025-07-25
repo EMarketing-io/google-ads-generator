@@ -20,6 +20,8 @@ st.set_page_config(page_title="Google Ads Generator", layout="wide", page_icon="
 
 # === Load environment ===
 api_key = st.secrets["OPENAI_API_KEY"]
+training_url = st.secrets["TRAINING_PDF_URL"]
+
 
 # === Login Section ===
 def check_password(username: str, password: str) -> bool:
@@ -28,8 +30,10 @@ def check_password(username: str, password: str) -> bool:
         return False
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
+
 def login_ui():
-    st.markdown("""
+    st.markdown(
+        """
     <style>
     .login-title {
         text-align: center;
@@ -38,13 +42,11 @@ def login_ui():
         margin-top: 30px;
         margin-bottom: 10px;
     }
-
     .login-subtitle {
         text-align: center;
         font-size: 16px;
         margin-bottom: 25px;
     }
-
     @media (prefers-color-scheme: light) {
         .login-title { color: #000000; }
         .login-subtitle { color: #333333; }
@@ -54,18 +56,20 @@ def login_ui():
         .login-subtitle { color: #cccccc; }
     }
     </style>
-
     <div class="login-title">🔐 Welcome to Ad Generator Login</div>
     <div class="login-subtitle">Please enter your credentials to access the dashboard.</div>
-    """, unsafe_allow_html=True)
+    """,
+        unsafe_allow_html=True,
+    )
 
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
         with st.form("login_form", clear_on_submit=False):
             username = st.text_input("👤 Username", placeholder="Enter your username")
-            password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
+            password = st.text_input(
+                "🔒 Password", type="password", placeholder="Enter your password"
+            )
             submitted = st.form_submit_button("🚀 Login")
-
             if submitted:
                 if check_password(username, password):
                     st.session_state["logged_in"] = True
@@ -75,13 +79,15 @@ def login_ui():
                 else:
                     st.error("❌ Invalid username or password")
 
+
 # === Authenticate First ===
 if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
     login_ui()
     st.stop()
 
 # === Main App Title ===
-st.markdown("""
+st.markdown(
+    """
 <style>
 .app-title {
     text-align: center;
@@ -96,14 +102,10 @@ st.markdown("""
     .app-title { color: #ffffff; }
 }
 </style>
-
 <div class="app-title">📢 Ads Generator</div>
-""", unsafe_allow_html=True)
-
-# === Check API ===
-if not api_key:
-    st.error("❌ Missing OPENAI_API_KEY in .env")
-    st.stop()
+""",
+    unsafe_allow_html=True,
+)
 
 # === LLM Setup ===
 llm = ChatOpenAI(
@@ -123,7 +125,9 @@ with col2:
     offers_url = st.text_input("🎁 Offers (Google Doc or PDF) [Optional]")
 
 st.markdown("### 🛠️ Required Inputs")
-keyword_url = st.text_input("📊 Keywords (Google Sheet)", placeholder="https://drive.google.com/file")
+keyword_url = st.text_input(
+    "📊 Keywords (Google Sheet)", placeholder="https://drive.google.com/file"
+)
 sheet_name = st.text_input("📑 Sheet Name", placeholder="e.g., Sheet1")
 generate = st.button("🚀 Generate Ads", use_container_width=True)
 
@@ -145,7 +149,16 @@ if generate:
 
         summaries = {"website": "", "questionnaire": "", "offers": "", "transcript": ""}
 
-        with st.status("📥 Downloading and extracting documents...", expanded=True) as status:
+        with st.status(
+            "📥 Downloading and extracting documents...", expanded=True
+        ) as status:
+            # Mandatory training rules
+            st.write("📘 Summarizing Training Rules...")
+            training_text = extract_text_from_pdf_bytes(
+                download_google_file_as_bytes(training_url)
+            )
+            rules_summary = summarize_text(llm, training_text, "Training Rules")
+
             if website_url:
                 st.write("🌐 Summarizing Website...")
                 text = extract_google_file(website_url)
@@ -185,10 +198,11 @@ if generate:
             ads = generate_ads(
                 llm,
                 keyword_groups,
+                rules=rules_summary,
                 website=summaries["website"],
                 questionnaire=summaries["questionnaire"],
                 offers=summaries["offers"],
-                transcript=summaries["transcript"]
+                transcript=summaries["transcript"],
             )
 
         output_df = pd.DataFrame(ads)

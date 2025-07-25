@@ -4,7 +4,14 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 
 prompt_template = PromptTemplate(
-    input_variables=["website", "questionnaire", "offers", "transcript", "keywords"],
+    input_variables=[
+        "rules",
+        "website",
+        "questionnaire",
+        "offers",
+        "transcript",
+        "keywords",
+    ],
     template="""
 You are a Google Ads strategist.
 
@@ -93,6 +100,11 @@ Generate a high-converting Responsive Search Ad using the provided TRAINING RULE
 
 ---
 
+📘 TRAINING RULES:
+Use these official ad-writing rules to guide structure, clarity, and performance:
+{rules}
+
+
 📄 WEBSITE SUMMARY:
 Use this to define brand voice, tone, values, and high-level messaging:
 {website}
@@ -154,7 +166,7 @@ These are the only themes or search intents this ad should be focused on. Do not
 
 
 def generate_ads(
-    llm, keyword_groups, website, questionnaire="", offers="", transcript=""
+    llm, keyword_groups, rules, website, questionnaire="", offers="", transcript=""
 ):
     chain = LLMChain(llm=llm, prompt=prompt_template)
     ads = []
@@ -169,6 +181,7 @@ def generate_ads(
 
         try:
             response = chain.run(
+                rules=rules,
                 website=website,
                 questionnaire=questionnaire,
                 offers=offers,
@@ -177,14 +190,13 @@ def generate_ads(
             )
             ad = json.loads(response.strip("```json\n").strip("```").strip())
 
-            # Clean and deduplicate content
             def clean_list(items, max_len):
                 seen = set()
                 result = []
                 for item in items:
                     item = item.strip()
-                    if item and item not in seen:
-                        seen.add(item)
+                    if item and item.lower() not in seen:
+                        seen.add(item.lower())
                         result.append(item)
                     if len(result) >= max_len:
                         break
@@ -193,9 +205,12 @@ def generate_ads(
             headlines = clean_list(ad.get("headlines", []), 10)
             descriptions = clean_list(ad.get("descriptions", []), 4)
             callouts = clean_list(ad.get("callouts", []), 8)
-            snippets = clean_list(ad.get("structuredSnippet", {}).get("values", []), 4)
+
+            structured = ad.get("structuredSnippet") or {}
+            snippets = clean_list(structured.get("values", []), 4)
+            snippet_type = structured.get("snippetType", "")
+
             sitelinks = ad.get("sitelinks", [])[:4]
-            snippet_type = ad.get("structuredSnippet", {}).get("snippetType", "")
 
             # Build the final ad row
             ad_row = {
@@ -231,14 +246,12 @@ def generate_ads(
                     "description2", ""
                 ).strip()
 
-            # Add structured snippet
             ad_row["Structured Snippets Type"] = snippet_type.strip()
             for i in range(4):
                 ad_row[f"Structured Snippets {i+1}"] = (
                     snippets[i] if i < len(snippets) else ""
                 )
 
-            # Add extensions
             ad_row["Call Extension"] = ad.get("callExtension", "").strip()
             ad_row["Location Extension"] = ad.get("locationExtension", "").strip()
             ad_row["Promotional Extension"] = ad.get("promotionalExtension", "").strip()
