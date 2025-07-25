@@ -114,6 +114,47 @@ llm = ChatOpenAI(
     openai_api_key=api_key,
 )
 
+
+def summarize_with_progress(title, text):
+    st.subheader(f"🧠 Summarizing: {title}")
+    placeholder = st.empty()
+    bar = st.progress(0.0)
+    total_start = time.time()
+
+    chunks = text.split("\n\n")
+    summaries = []
+    total = len(chunks)
+
+    for i, chunk in enumerate(chunks, 1):
+        summary = llm.predict(
+            f"""
+You are a Google Ads strategist. Summarize this part of the document titled '{title}' into 150 words or fewer.
+
+CONTENT:
+{chunk}
+"""
+        )
+        summaries.append(summary)
+        elapsed = time.time() - total_start
+        avg_time = elapsed / i
+        remaining = avg_time * (total - i)
+        placeholder.text(f"⏳ ETA: {int(remaining)}s | Elapsed: {int(elapsed)}s")
+        bar.progress(i / total)
+        time.sleep(0.5)
+
+    final_prompt = f"""
+You are a Google Ads strategist. Summarize the following summaries of the document titled '{title}' into 400 words or fewer.
+
+CONTENT:
+{"\n\n".join(summaries)}
+"""
+    combined = llm.predict(final_prompt)
+    bar.empty()
+    placeholder.empty()
+    st.success(f"✅ Summary complete for: {title}")
+    return combined
+
+
 # === Inputs ===
 st.subheader("📝 Provide Google Links")
 col1, col2 = st.columns(2)
@@ -152,32 +193,31 @@ if generate:
         with st.status(
             "📥 Downloading and extracting documents...", expanded=True
         ) as status:
-            # Mandatory training rules
             st.write("📘 Summarizing Training Rules...")
             training_text = extract_text_from_pdf_bytes(
                 download_google_file_as_bytes(training_url)
             )
-            rules_summary = summarize_text(llm, training_text, "Training Rules")
+            rules_summary = summarize_with_progress("Training Rules", training_text)
 
             if website_url:
-                st.write("🌐 Summarizing Website...")
                 text = extract_google_file(website_url)
-                summaries["website"] = summarize_text(llm, text, "Website Summary")
+                summaries["website"] = summarize_with_progress("Website Summary", text)
 
             if questionnaire_url:
-                st.write("📋 Summarizing Questionnaire...")
                 text = extract_google_file(questionnaire_url)
-                summaries["questionnaire"] = summarize_text(llm, text, "Questionnaire")
+                summaries["questionnaire"] = summarize_with_progress(
+                    "Questionnaire", text
+                )
 
             if offers_url:
-                st.write("🎁 Summarizing Offers...")
                 text = extract_google_file(offers_url)
-                summaries["offers"] = summarize_text(llm, text, "Offers")
+                summaries["offers"] = summarize_with_progress("Offers", text)
 
             if transcript_url:
-                st.write("🎙️ Summarizing Transcript...")
                 text = extract_google_file(transcript_url)
-                summaries["transcript"] = summarize_text(llm, text, "Zoom Transcript")
+                summaries["transcript"] = summarize_with_progress(
+                    "Zoom Transcript", text
+                )
 
             if not any(summaries.values()):
                 st.error("❌ At least one optional document must be provided.")
@@ -194,16 +234,26 @@ if generate:
             status.update(label="✅ All documents loaded.", state="complete")
 
         st.markdown("## 🛠️ Generating Ads")
-        with st.spinner("Generating ads using the summarized information..."):
-            ads = generate_ads(
+        progress_label = st.empty()
+        progress_bar = st.progress(0)
+        ads = []
+        total_groups = len(keyword_groups)
+
+        for idx, (label, keywords) in enumerate(keyword_groups.items()):
+            progress_label.markdown(
+                f"🔄 Generating ad for **{label}** (`{idx+1}/{total_groups}`)"
+            )
+            ad_batch = generate_ads(
                 llm,
-                keyword_groups,
+                {label: keywords},
                 rules=rules_summary,
                 website=summaries["website"],
                 questionnaire=summaries["questionnaire"],
                 offers=summaries["offers"],
                 transcript=summaries["transcript"],
             )
+            ads.extend(ad_batch)
+            progress_bar.progress((idx + 1) / total_groups)
 
         output_df = pd.DataFrame(ads)
         output_buffer = BytesIO()
