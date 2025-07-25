@@ -4,7 +4,7 @@ from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 
 prompt_template = PromptTemplate(
-    input_variables=["rules", "company", "offers", "keywords"],
+    input_variables=["website", "questionnaire", "offers", "transcript", "keywords"],
     template="""
 You are a Google Ads strategist.
 
@@ -93,21 +93,27 @@ Generate a high-converting Responsive Search Ad using the provided TRAINING RULE
 
 ---
 
-🧠 COPYWRITING RULES TO FOLLOW:
-Use the following ad writing rules when generating this campaign. These are based on top-performing ads from Google and leading brands:
-{rules}
+📄 WEBSITE SUMMARY:
+Use this to define brand voice, tone, values, and high-level messaging:
+{website}
 
 ---
 
-🏢 COMPANY INFO:
-Use this to match tone, value props, or special offerings:
-{company}
+📋 QUESTIONNAIRE:
+Use this to understand features, product info, and user pain points:
+{questionnaire}
 
 ---
 
-🎁 CURRENT OFFERS:
-Incorporate any promos, guarantees, or special features:
+🎁 OFFERS:
+Incorporate promotions, guarantees, or special features:
 {offers}
+
+---
+
+🎙️ AUDIO TRANSCRIPT (e.g. Zoom):
+Use this to capture intent, delivery style, and customer phrasing:
+{transcript}
 
 ---
 
@@ -147,7 +153,9 @@ These are the only themes or search intents this ad should be focused on. Do not
 )
 
 
-def generate_ads(llm, keyword_groups, rules, company, offers):
+def generate_ads(
+    llm, keyword_groups, website, questionnaire="", offers="", transcript=""
+):
     chain = LLMChain(llm=llm, prompt=prompt_template)
     ads = []
 
@@ -161,9 +169,10 @@ def generate_ads(llm, keyword_groups, rules, company, offers):
 
         try:
             response = chain.run(
-                rules=rules,
-                company=company,
+                website=website,
+                questionnaire=questionnaire,
                 offers=offers,
+                transcript=transcript,
                 keywords=", ".join(keywords),
             )
             ad = json.loads(response.strip("```json\n").strip("```").strip())
