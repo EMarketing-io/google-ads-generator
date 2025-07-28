@@ -156,14 +156,14 @@ CONTENT:
 
 
 # === Inputs ===
-st.subheader("📝 Provide Google Links")
+st.subheader("📝 Provide Google Links (Google Doc or PDF) [Optional]")
 col1, col2 = st.columns(2)
 with col1:
-    website_url = st.text_input("🌐 Website Summary (Google Doc or PDF) [Optional]")
-    questionnaire_url = st.text_input("📋 Questionnaire (Google Doc or PDF) [Optional]")
+    website_url = st.text_input("🌐 Website Summary", placeholder="https://drive.google.com/file")
+    questionnaire_url = st.text_input("📋 Questionnaire", placeholder="https://drive.google.com/file")
 with col2:
-    transcript_url = st.text_input("🎙️ Zoom Transcript (Google Doc or PDF) [Optional]")
-    offers_url = st.text_input("🎁 Offers (Google Doc or PDF) [Optional]")
+    transcript_url = st.text_input("🎙️ Zoom Transcript", placeholder="https://drive.google.com/file")
+    offers_url = st.text_input("🎁 Offers", placeholder="https://drive.google.com/file")
 
 st.markdown("### 🛠️ Required Inputs")
 keyword_url = st.text_input(
