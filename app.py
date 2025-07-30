@@ -21,6 +21,9 @@ from file_utils import (
 from summarizer import summarize_text
 from ad_generator import generate_ads
 
+# Chatbot Logic
+from chatbot import answer_question
+
 # Streamlit App Configuration
 st.set_page_config(page_title="Google Ads Generator", layout="wide", page_icon="📢")
 
@@ -287,3 +290,27 @@ if generate:
 
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
+
+st.markdown("---")
+st.markdown("## 💬 Chat with Your Documents")
+
+with st.expander("🧠 Open Chatbot", expanded=False):
+    chat_col1, chat_col2 = st.columns([4, 1])
+    with chat_col1:
+        user_question = st.text_input("Ask a question about your documents:", key="chat_input")
+    with chat_col2:
+        ask = st.button("Ask")
+
+    if ask and user_question:
+        with st.spinner("Thinking..."):
+            docs_for_chat = {
+                "Training Rules": training_text,
+                "Website Summary": summaries["website"],
+                "Questionnaire": summaries["questionnaire"],
+                "Offers": summaries["offers"],
+                "Zoom Transcript": summaries["transcript"]
+            }
+
+            response, source = answer_question(llm, user_question, docs_for_chat)
+            st.markdown(f"**💬 Answer:** {response}")
+            st.markdown(f"📄 *Reference Source:* `{source}`")
