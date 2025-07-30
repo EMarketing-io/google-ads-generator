@@ -265,7 +265,8 @@ if generate:
                 if df[col].dropna().any()
             }
             st.write(f"📊 Found `{len(keyword_groups)}` keyword groups in sheet.")
-            
+
+            # Generate keyword summary text
             keyword_summary_text = ""
             for group, words in keyword_groups.items():
                 if words:
@@ -294,16 +295,6 @@ if generate:
         st.session_state["output_df"] = output_df
         st.session_state["output_buffer"] = output_buffer
         st.session_state["ads_ready"] = True
-
-        # Display output immediately
-        st.markdown("## ✅ Output")
-        st.success("🎉 All Ads generated successfully!")
-        st.download_button(
-            "📥 Download Excel File",
-            output_buffer,
-            file_name="Generated_Ads_Output.xlsx",
-            use_container_width=True,
-        )
         st.info(f"⏱️ Total processing time: {round(time.time() - start_total)} seconds")
 
     except Exception as e:
