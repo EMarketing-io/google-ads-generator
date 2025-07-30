@@ -175,15 +175,15 @@ col1, col2 = st.columns(2)
 
 with col1:
     website_url = st.text_input(
-        "🌐 Website Summary", placeholder="e.g., www.example.com"
+        "🌐 Website Summary", placeholder="e.g., https://docs.google.com/document"
     )
     questionnaire_url = st.text_input(
-        "📋 Questionnaire", placeholder="e.g., https://drive.google.com/file"
+        "📋 Questionnaire", placeholder="e.g., https://docs.google.com/document"
     )
 
 with col2:
     transcript_url = st.text_input(
-        "🎙️ Zoom Transcript", placeholder="e.g., https://drive.google.com/file"
+        "🎙️ Zoom Transcript", placeholder="e.g., https://docs.google.com/document"
     )
     offers_url = st.text_input(
         "🎁 Offers", placeholder="e.g., https://drive.google.com/file"
@@ -192,7 +192,7 @@ with col2:
 # Required Inputs
 st.markdown("### 🛠️ Required Inputs")
 keyword_url = st.text_input(
-    "📊 Keywords (Google Sheet)", placeholder="e.g., https://drive.google.com/file"
+    "📊 Keywords (Google Sheet)", placeholder="e.g., https://docs.google.com/spreadsheets"
 )
 sheet_name = st.text_input("📑 Sheet Name", placeholder="e.g., Sheet1")
 generate = st.button("🚀 Generate Ads", use_container_width=True)
