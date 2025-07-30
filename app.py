@@ -121,6 +121,15 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
+# === Sidebar Welcome & Logout ===
+with st.sidebar:
+    st.markdown(f"👋 **Welcome, {st.session_state.get('username', 'User')}!**")
+    if st.button("🔓 Logout"):
+        for key in list(st.session_state.keys()):
+            del st.session_state[key]
+        st.experimental_rerun()
+
+
 # Initialize the LLM
 llm = ChatOpenAI(
     model_name="gpt-4.1-2025-04-14",
