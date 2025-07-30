@@ -228,6 +228,9 @@ if generate:
                 text = extract_google_file(transcript_url)
                 summaries["transcript"] = summarize_with_progress("Zoom Transcript", text)
 
+            st.session_state["training_text"] = training_text
+            st.session_state["summaries"] = summaries
+
             # Check if at least one optional document is provided
             if not any(summaries.values()):
                 st.error("❌ At least one optional document must be provided.")
@@ -291,26 +294,25 @@ if generate:
     except Exception as e:
         st.error(f"❌ Error: {str(e)}")
 
-st.markdown("---")
-st.markdown("## 💬 Chat with Your Documents")
+# Sidebar for Chatbot Interaction
+st.sidebar.markdown("## 💬 Ask the Assistant")
+user_question = st.sidebar.text_input("Type your question:")
+ask = st.sidebar.button("Ask", use_container_width=True)
 
-with st.expander("🧠 Open Chatbot", expanded=False):
-    chat_col1, chat_col2 = st.columns([4, 1])
-    with chat_col1:
-        user_question = st.text_input("Ask a question about your documents:", key="chat_input")
-    with chat_col2:
-        ask = st.button("Ask")
-
-    if ask and user_question:
-        with st.spinner("Thinking..."):
+if ask and user_question:
+    if "training_text" not in st.session_state or "summaries" not in st.session_state:
+        st.sidebar.warning("Please generate the ads first.")
+    else:
+        with st.sidebar:
             docs_for_chat = {
-                "Training Rules": training_text,
-                "Website Summary": summaries["website"],
-                "Questionnaire": summaries["questionnaire"],
-                "Offers": summaries["offers"],
-                "Zoom Transcript": summaries["transcript"]
+                "Training Rules": st.session_state["training_text"],
+                "Website Summary": st.session_state["summaries"]["website"],
+                "Questionnaire": st.session_state["summaries"]["questionnaire"],
+                "Offers": st.session_state["summaries"]["offers"],
+                "Zoom Transcript": st.session_state["summaries"]["transcript"]
             }
 
-            response, source = answer_question(llm, user_question, docs_for_chat)
-            st.markdown(f"**💬 Answer:** {response}")
-            st.markdown(f"📄 *Reference Source:* `{source}`")
+            with st.spinner("Thinking..."):
+                response, source = answer_question(llm, user_question, docs_for_chat)
+                st.sidebar.markdown(f"**💬 Answer:** {response}")
+                st.sidebar.markdown(f"📄 *Reference:* `{source}`")
