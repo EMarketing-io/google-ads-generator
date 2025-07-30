@@ -307,7 +307,9 @@ if st.session_state.get("ads_ready") and "output_buffer" in st.session_state:
         st.session_state["output_buffer"],
         file_name="Generated_Ads_Output.xlsx",
         use_container_width=True,
+        key="download_button_cached",  # ✅ Unique key
     )
+
 
 # === Sidebar for Chatbot Interaction ===
 st.sidebar.markdown("## 💬 Ask the Assistant")
