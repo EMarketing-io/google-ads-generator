@@ -192,7 +192,8 @@ with col2:
 # Required Inputs
 st.markdown("### 🛠️ Required Inputs")
 keyword_url = st.text_input(
-    "📊 Keywords (Google Sheet)", placeholder="e.g., https://docs.google.com/spreadsheets"
+    "📊 Keywords (Google Sheet)",
+    placeholder="e.g., https://docs.google.com/spreadsheets",
 )
 sheet_name = st.text_input("📑 Sheet Name", placeholder="e.g., Sheet1")
 generate = st.button("🚀 Generate Ads", use_container_width=True)
@@ -253,14 +254,24 @@ if generate:
             st.session_state["training_text"] = training_text
             st.session_state["summaries"] = summaries
 
+            # Download and process the keywords sheet
             excel_bytes = download_google_file_as_bytes(keyword_url)
             df = read_excel_sheet_from_bytes(excel_bytes, sheet_name)
+
+            # Keyword Groups Extraction
             keyword_groups = {
                 col.strip(): df[col].dropna().astype(str).tolist()
                 for col in df.columns
                 if df[col].dropna().any()
             }
             st.write(f"📊 Found `{len(keyword_groups)}` keyword groups in sheet.")
+            
+            keyword_summary_text = ""
+            for group, words in keyword_groups.items():
+                if words:
+                    keyword_summary_text += f"\n🗂️ {group}:\n- " + "\n- ".join(words)
+
+            st.session_state["keyword_summary"] = keyword_summary_text.strip()
             status.update(label="✅ All documents loaded.", state="complete")
 
         st.markdown("## 🛠️ Generating Ads")
@@ -322,11 +333,11 @@ if ask and user_question:
     else:
         with st.sidebar:
             docs_for_chat = {
-                "Training Rules": st.session_state["training_text"],
                 "Website Summary": st.session_state["summaries"]["website"],
                 "Questionnaire": st.session_state["summaries"]["questionnaire"],
                 "Offers": st.session_state["summaries"]["offers"],
                 "Zoom Transcript": st.session_state["summaries"]["transcript"],
+                "Target Keywords": st.session_state.get("keyword_summary", ""),
             }
             with st.spinner("Thinking..."):
                 response, source = answer_question(llm, user_question, docs_for_chat)
