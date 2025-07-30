@@ -1,8 +1,12 @@
+# Standard Libraries
 import json
 import time
+
+# LangChain Libraries
 from langchain.prompts import PromptTemplate
 from langchain.chains import LLMChain
 
+# Prompt Template for Google Ads Generation
 prompt_template = PromptTemplate(
     input_variables=[
         "rules",
@@ -165,19 +169,17 @@ These are the only themes or search intents this ad should be focused on. Do not
 )
 
 
-def generate_ads(
-    llm, keyword_groups, rules, website, questionnaire="", offers="", transcript=""
-):
+# Function to generate Google Ads based on keyword groups and provided context
+def generate_ads(llm, keyword_groups, rules, website, questionnaire="", offers="", transcript=""):
     chain = LLMChain(llm=llm, prompt=prompt_template)
     ads = []
 
+    # Iterate through each keyword group and generate ads
     for idx, (label, keywords) in enumerate(keyword_groups.items()):
         if not any(keywords):
             continue
 
-        print(
-            f"\n📢 [{idx+1}/{len(keyword_groups)}] Generating ad for keyword group: '{label}'"
-        )
+        print(f"\n📢 [{idx+1}/{len(keyword_groups)}] Generating ad for keyword group: '{label}'")
 
         try:
             response = chain.run(
@@ -189,7 +191,8 @@ def generate_ads(
                 keywords=", ".join(keywords),
             )
             ad = json.loads(response.strip("```json\n").strip("```").strip())
-
+            
+            # Clean and structure the ad data
             def clean_list(items, max_len):
                 seen = set()
                 result = []
@@ -201,18 +204,17 @@ def generate_ads(
                     if len(result) >= max_len:
                         break
                 return result
-
+            
+            # Ensure all fields are present and clean
             headlines = clean_list(ad.get("headlines", []), 10)
             descriptions = clean_list(ad.get("descriptions", []), 4)
             callouts = clean_list(ad.get("callouts", []), 8)
-
             structured = ad.get("structuredSnippet") or {}
             snippets = clean_list(structured.get("values", []), 4)
             snippet_type = structured.get("snippetType", "")
-
             sitelinks = ad.get("sitelinks", [])[:4]
 
-            # Build the final ad row
+            # Structure the ad row
             ad_row = {
                 "Campaign": "emarketing",
                 "Ad group": ad.get("adGroupName", f"AdGroup_{idx+1}"),
@@ -236,6 +238,7 @@ def generate_ads(
                 },
             }
 
+            # Add sitelinks (1 Headline + 2 Descriptions each)
             for i in range(4):
                 sl = sitelinks[i] if i < len(sitelinks) else {}
                 ad_row[f"Sitelink Headline {i+1}"] = sl.get("headline", "").strip()
@@ -246,12 +249,14 @@ def generate_ads(
                     "description2", ""
                 ).strip()
 
+            # Add structured snippets (1 Type + 4 Values)
             ad_row["Structured Snippets Type"] = snippet_type.strip()
             for i in range(4):
                 ad_row[f"Structured Snippets {i+1}"] = (
                     snippets[i] if i < len(snippets) else ""
                 )
-
+            
+            # Add extensions
             ad_row["Call Extension"] = ad.get("callExtension", "").strip()
             ad_row["Location Extension"] = ad.get("locationExtension", "").strip()
             ad_row["Promotional Extension"] = ad.get("promotionalExtension", "").strip()

@@ -1,11 +1,17 @@
+# Standard Libraries
 import os
 import time
+from io import BytesIO
+
+# Third-Party Libraries
 import pandas as pd
 import bcrypt
 import streamlit as st
-from io import BytesIO
 
+# LangChain Libraries
 from langchain.chat_models import ChatOpenAI
+
+# Local Modules
 from file_utils import (
     download_google_file_as_bytes,
     extract_text_from_pdf_bytes,
@@ -15,15 +21,14 @@ from file_utils import (
 from summarizer import summarize_text
 from ad_generator import generate_ads
 
-# === App Config ===
+# Streamlit App Configuration
 st.set_page_config(page_title="Google Ads Generator", layout="wide", page_icon="📢")
 
-# === Load environment ===
+# Environment Variables
 api_key = st.secrets["OPENAI_API_KEY"]
 training_url = st.secrets["TRAINING_PDF_URL"]
 
-
-# === Login Section ===
+# Authentication Function
 def check_password(username: str, password: str) -> bool:
     hashed = os.getenv(f"{username.upper()}_HASHED")
     if not hashed:
@@ -31,6 +36,7 @@ def check_password(username: str, password: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
 
+# Login UI Function
 def login_ui():
     st.markdown(
         """
@@ -66,9 +72,7 @@ def login_ui():
     with col2:
         with st.form("login_form", clear_on_submit=False):
             username = st.text_input("👤 Username", placeholder="Enter your username")
-            password = st.text_input(
-                "🔒 Password", type="password", placeholder="Enter your password"
-            )
+            password = st.text_input("🔒 Password", type="password", placeholder="Enter your password")
             submitted = st.form_submit_button("🚀 Login")
             if submitted:
                 if check_password(username, password):
@@ -79,13 +83,12 @@ def login_ui():
                 else:
                     st.error("❌ Invalid username or password")
 
-
-# === Authenticate First ===
+# Initialize Session State
 if "logged_in" not in st.session_state or not st.session_state["logged_in"]:
     login_ui()
     st.stop()
 
-# === Main App Title ===
+# If logged in, display the main app
 st.markdown(
     """
 <style>
@@ -107,24 +110,24 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# === LLM Setup ===
+# Initialize the LLM
 llm = ChatOpenAI(
     model_name="gpt-4.1-2025-04-14",
     temperature=0.3,
     openai_api_key=api_key,
 )
 
-
+# Function to summarize text with progress bar
 def summarize_with_progress(title, text):
     st.subheader(f"🧠 Summarizing: {title}")
     placeholder = st.empty()
     bar = st.progress(0.0)
     total_start = time.time()
-
     chunks = text.split("\n\n")
     summaries = []
     total = len(chunks)
 
+    # Check if there are no chunks to summarize
     for i, chunk in enumerate(chunks, 1):
         summary = llm.predict(
             f"""
@@ -142,6 +145,7 @@ CONTENT:
         bar.progress(i / total)
         time.sleep(0.5)
 
+    # Final summary of all chunks
     final_prompt = f"""
 You are a Google Ads strategist. Summarize the following summaries of the document titled '{title}' into 400 words or fewer.
 
@@ -154,33 +158,38 @@ CONTENT:
     st.success(f"✅ Summary complete for: {title}")
     return combined
 
-
-# === Inputs ===
+# Main App UI 
 st.subheader("📝 Provide Google Links (Google Doc or PDF) [Optional]")
 col1, col2 = st.columns(2)
-with col1:
-    website_url = st.text_input("🌐 Website Summary", placeholder="https://drive.google.com/file")
-    questionnaire_url = st.text_input("📋 Questionnaire", placeholder="https://drive.google.com/file")
-with col2:
-    transcript_url = st.text_input("🎙️ Zoom Transcript", placeholder="https://drive.google.com/file")
-    offers_url = st.text_input("🎁 Offers", placeholder="https://drive.google.com/file")
 
+# Input for Website and Questionnaire
+with col1:
+    website_url = st.text_input("🌐 Website Summary", placeholder="e.g., www.example.com")
+    questionnaire_url = st.text_input("📋 Questionnaire", placeholder="e.g., https://drive.google.com/file")
+
+# Input for Transcript, and Offers
+with col2:
+    transcript_url = st.text_input("🎙️ Zoom Transcript", placeholder="e.g., https://drive.google.com/file")
+    offers_url = st.text_input("🎁 Offers", placeholder="e.g., https://drive.google.com/file")
+
+# Input for Keywords Sheet and Sheet Name
 st.markdown("### 🛠️ Required Inputs")
-keyword_url = st.text_input(
-    "📊 Keywords (Google Sheet)", placeholder="https://drive.google.com/file"
-)
+keyword_url = st.text_input("📊 Keywords (Google Sheet)", placeholder="e.g., https://drive.google.com/file")
 sheet_name = st.text_input("📑 Sheet Name", placeholder="e.g., Sheet1")
 generate = st.button("🚀 Generate Ads", use_container_width=True)
 
+# Check if the user has provided the required inputs
 if generate:
     try:
         start_total = time.time()
         st.success("✅ Inputs received. Starting processing...")
 
+        # Validate required inputs
         if not keyword_url or not sheet_name:
             st.error("❌ Please provide both the Keywords sheet and Sheet name.")
             st.stop()
 
+        # Function to extract text from Google files
         def extract_google_file(url):
             file_bytes = download_google_file_as_bytes(url)
             if url.endswith(".pdf"):
@@ -190,41 +199,42 @@ if generate:
 
         summaries = {"website": "", "questionnaire": "", "offers": "", "transcript": ""}
 
-        with st.status(
-            "📥 Downloading and extracting documents...", expanded=True
-        ) as status:
+        # Download and summarize the training rules
+        with st.status("📥 Downloading and extracting documents...", expanded=True) as status:
             st.write("📘 Summarizing Training Rules...")
-            training_text = extract_text_from_pdf_bytes(
-                download_google_file_as_bytes(training_url)
-            )
+            training_text = extract_text_from_pdf_bytes(download_google_file_as_bytes(training_url))
             rules_summary = summarize_with_progress("Training Rules", training_text)
 
+            # Website Summary
             if website_url:
                 text = extract_google_file(website_url)
                 summaries["website"] = summarize_with_progress("Website Summary", text)
 
+            # Questionnaire Summary
             if questionnaire_url:
                 text = extract_google_file(questionnaire_url)
-                summaries["questionnaire"] = summarize_with_progress(
-                    "Questionnaire", text
-                )
-
+                summaries["questionnaire"] = summarize_with_progress("Questionnaire", text)
+            
+            # Offers Summary
             if offers_url:
                 text = extract_google_file(offers_url)
                 summaries["offers"] = summarize_with_progress("Offers", text)
-
+            
+            # Transcript Summary
             if transcript_url:
                 text = extract_google_file(transcript_url)
-                summaries["transcript"] = summarize_with_progress(
-                    "Zoom Transcript", text
-                )
+                summaries["transcript"] = summarize_with_progress("Zoom Transcript", text)
 
+            # Check if at least one optional document is provided
             if not any(summaries.values()):
                 st.error("❌ At least one optional document must be provided.")
                 st.stop()
 
+            # Download and process the keywords sheet
             excel_bytes = download_google_file_as_bytes(keyword_url)
             df = read_excel_sheet_from_bytes(excel_bytes, sheet_name)
+            
+            # Keyword Groups Extraction
             keyword_groups = {
                 col.strip(): df[col].dropna().astype(str).tolist()
                 for col in df.columns
@@ -232,17 +242,16 @@ if generate:
             }
             st.write(f"📊 Found `{len(keyword_groups)}` keyword groups in sheet.")
             status.update(label="✅ All documents loaded.", state="complete")
-
+        
         st.markdown("## 🛠️ Generating Ads")
         progress_label = st.empty()
         progress_bar = st.progress(0)
         ads = []
         total_groups = len(keyword_groups)
 
+        # Generate Ads for each keyword group
         for idx, (label, keywords) in enumerate(keyword_groups.items()):
-            progress_label.markdown(
-                f"🔄 Generating ad for **{label}** (`{idx+1}/{total_groups}`)"
-            )
+            progress_label.markdown(f"🔄 Generating ad for **{label}** (`{idx+1}/{total_groups}`)")
             ad_batch = generate_ads(
                 llm,
                 {label: keywords},
@@ -255,13 +264,17 @@ if generate:
             ads.extend(ad_batch)
             progress_bar.progress((idx + 1) / total_groups)
 
+        # Prepare the output DataFrame
         output_df = pd.DataFrame(ads)
         output_buffer = BytesIO()
         output_df.to_excel(output_buffer, index=False)
         output_buffer.seek(0)
 
+        # Display the output in Streamlit
         st.markdown("## ✅ Output")
         st.success("🎉 All Ads generated successfully!")
+        
+        # Download Final Output
         st.download_button(
             "📥 Download Excel File",
             output_buffer,
@@ -269,6 +282,7 @@ if generate:
             use_container_width=True,
         )
 
+        # Total processing time taken
         st.info(f"⏱️ Total processing time: {round(time.time() - start_total)} seconds")
 
     except Exception as e:
