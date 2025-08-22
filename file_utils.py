@@ -15,45 +15,49 @@ splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
 
 
 # Download Google file as bytes based on its URL
-def download_google_file_as_bytes(url, export_type="docx"):
-    
-    # Handle Google Docs links
+# file_utils.py
+
+def download_google_file_as_bytes(url, export_type=None):
+    """
+    Download Google file as bytes.
+    Auto-detects format from URL if export_type not provided.
+    """
+    # Handle Google Docs
     if "docs.google.com/document" in url:
         match = re.search(r"/d/([a-zA-Z0-9_-]+)", url)
-
         if not match:
             raise ValueError("Invalid Google Docs link")
         file_id = match.group(1)
-        # export_url = (f"https://docs.google.com/document/d/{file_id}/export?format={export_type}")
-        export_url = f"https://docs.google.com/document/d/{file_id}/export?format=docx"
-    
-    # Handle Google Sheets and Drive links
+
+        # default export type: docx unless explicitly pdf
+        fmt = export_type if export_type else "docx"
+        export_url = f"https://docs.google.com/document/d/{file_id}/export?format={fmt}"
+
+    # Handle Google Sheets
     elif "docs.google.com/spreadsheets" in url:
         match = re.search(r"/d/([a-zA-Z0-9_-]+)", url)
-
         if not match:
             raise ValueError("Invalid Google Sheets link")
-        export_url = f"https://docs.google.com/spreadsheets/d/{match.group(1)}/export?format=xlsx"
+        fmt = export_type if export_type else "xlsx"
+        export_url = f"https://docs.google.com/spreadsheets/d/{match.group(1)}/export?format={fmt}"
 
-    # Handle Google Drive file links
+    # Handle Google Drive files (auto-detect from env/pdf/docx)
     elif "drive.google.com/file" in url:
         match = re.search(r"/d/([a-zA-Z0-9_-]+)", url)
-
         if not match:
             raise ValueError("Invalid Google Drive file link")
         file_id = match.group(1)
         export_url = f"https://drive.google.com/uc?export=download&id={file_id}"
 
-    # Handle direct URLs
     else:
         export_url = url
 
     response = requests.get(export_url)
-
-    # Check if the response is valid
     if response.status_code != 200 or "text/html" in response.headers.get("Content-Type", ""):
         raise Exception(f"❌ Could not download file from: {url}")
+
     return io.BytesIO(response.content)
+
 
 
 # Extract text from DOCX bytes

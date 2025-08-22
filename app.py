@@ -221,12 +221,13 @@ if generate:
             st.stop()
 
         def extract_google_file(url):
-            file_bytes = download_google_file_as_bytes(url)
-            return (
-                extract_text_from_pdf_bytes(file_bytes)
-                if url.endswith(".pdf")
-                else extract_text_from_docx_bytes(file_bytes)
-            )
+            if url.endswith(".pdf"):
+                file_bytes = download_google_file_as_bytes(url, export_type="pdf")
+                return extract_text_from_pdf_bytes(file_bytes)
+            else:
+                file_bytes = download_google_file_as_bytes(url, export_type="docx")
+                return extract_text_from_docx_bytes(file_bytes)
+
 
         summaries = {"website": "", "questionnaire": "", "offers": "", "transcript": ""}
 
