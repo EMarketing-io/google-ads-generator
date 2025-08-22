@@ -15,6 +15,7 @@ from langchain.chat_models import ChatOpenAI
 from file_utils import (
     download_google_file_as_bytes,
     extract_text_from_pdf_bytes,
+    extract_text_auto,
     extract_text_from_docx_bytes,
     read_excel_sheet_from_bytes,
 )
@@ -223,11 +224,10 @@ if generate:
         def extract_google_file(url):
             if url.endswith(".pdf"):
                 file_bytes = download_google_file_as_bytes(url, export_type="pdf")
-                return extract_text_from_pdf_bytes(file_bytes)
+                return extract_text_auto(file_bytes)
             else:
                 file_bytes = download_google_file_as_bytes(url, export_type="docx")
                 return extract_text_from_docx_bytes(file_bytes)
-
 
         summaries = {"website": "", "questionnaire": "", "offers": "", "transcript": ""}
 
@@ -235,7 +235,7 @@ if generate:
             "📥 Downloading and extracting documents...", expanded=True
         ) as status:
             st.write("📘 Summarizing Training Rules...")
-            training_text = extract_text_from_pdf_bytes(
+            training_text = extract_text_auto(
                 download_google_file_as_bytes(training_url)
             )
             rules_summary = summarize_with_progress("Training Rules", training_text)
