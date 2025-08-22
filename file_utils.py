@@ -67,30 +67,20 @@ def _sniff_file_kind(data: bytes) -> str:
         return "zip"  # docx/xlsx/pptx/zip
     return "unknown"
 
-def extract_text_auto(file_bytes: io.BytesIO) -> str:
-    # normalize to raw bytes
-    pos = file_bytes.tell()
+def extract_text_auto(file_bytes):
     file_bytes.seek(0)
     raw = file_bytes.read()
-    file_bytes.seek(pos)
+    file_bytes.seek(0)
 
-    kind = _sniff_file_kind(raw)
-
-    if kind == "pdf":
+    # PDF starts with "%PDF"
+    if raw.startswith(b"%PDF"):
         return extract_text_from_pdf_bytes(io.BytesIO(raw))
 
-    if kind == "zip":
-        # Could be DOCX/XLSX/PPTX; we only support DOCX for text extraction here.
+    # DOCX/XLSX/PPTX are zip containers → start with PK
+    if raw.startswith(b"PK"):
         try:
             return extract_text_from_docx_bytes(io.BytesIO(raw))
         except Exception as e:
-            raise Exception(
-                "The downloaded file is a ZIP-based format but not a DOCX "
-                "(maybe XLSX/PPTX). Please provide a Google Doc/DOCX or PDF "
-                "for text extraction."
-            ) from e
+            raise Exception("❌ File is a ZIP-based format (maybe XLSX), not a DOCX.") from e
 
-    raise Exception(
-        "Unsupported file type. Please provide a Google Doc/DOCX or PDF. "
-        "If this is a Google Sheet, use it only for keywords (XLSX)."
-    )
+    raise Exception("❌ Unsupported file type. Please provide a DOCX or PDF.")

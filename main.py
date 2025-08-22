@@ -12,6 +12,7 @@ from file_utils import (
     download_google_file_as_bytes,
     extract_text_from_pdf_bytes,
     extract_text_from_docx_bytes,
+    extract_text_auto,
     read_excel_sheet_from_bytes,
 )
 from summarizer import summarize_text
@@ -20,12 +21,8 @@ from ad_generator import generate_ads
 
 # Prompt template for generating Google Ads
 def extract_google_file(url):
-    if url.endswith(".pdf"):
-        file_bytes = download_google_file_as_bytes(url, export_type="pdf")
-        return extract_text_from_pdf_bytes(file_bytes)
-    else:
-        file_bytes = download_google_file_as_bytes(url, export_type="docx")
-        return extract_text_from_docx_bytes(file_bytes)
+    file_bytes = download_google_file_as_bytes(url)
+    return extract_text_auto(file_bytes)
 
 
 
