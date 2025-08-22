@@ -24,7 +24,8 @@ def download_google_file_as_bytes(url, export_type="docx"):
         if not match:
             raise ValueError("Invalid Google Docs link")
         file_id = match.group(1)
-        export_url = (f"https://docs.google.com/document/d/{file_id}/export?format={export_type}")
+        # export_url = (f"https://docs.google.com/document/d/{file_id}/export?format={export_type}")
+        export_url = f"https://docs.google.com/document/d/{file_id}/export?format=docx"
     
     # Handle Google Sheets and Drive links
     elif "docs.google.com/spreadsheets" in url:
